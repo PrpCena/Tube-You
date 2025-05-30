@@ -1,0 +1,34 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# OS-specific
+.DS_Store
+
+# Dependency locks (optional, keep if you want deterministic builds)
+# package-lock.json
+
+# IDE/editor settings
+.vscode/
+.idea/
+
+# Build output (if any)
+dist/
+build/
+
+# Git itself (never include .git in .gitignore — it's managed by Git)
+# So skip listing .git or any of its internals
+
+# Ignore Prettier ignore file (optional)
+.prettierignore
+
+# Ignore public directory if it's just static placeholder
+public/
+
+# Ignore readme inside src if not needed in repo root
+src/readme.md
