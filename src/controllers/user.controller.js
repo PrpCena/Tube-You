@@ -4,6 +4,7 @@ import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { deleteFromCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
 
 const generateAccessAndRefreshToken = async (userid) => {
   try {
@@ -22,7 +23,7 @@ const generateAccessAndRefreshToken = async (userid) => {
     console.error("Error generating tokens:", error);
     throw new ApiError(500, "Failed to generate tokens");
   }
-}
+};
 
 const registerUser = asyncHandler(async (req, res) => {
   const { fullname, email, username, password } = req.body;
@@ -100,7 +101,7 @@ const registerUser = asyncHandler(async (req, res) => {
       "Something went wrong user not created, images were deleted"
     );
   }
-})
+});
 
 const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
@@ -109,8 +110,8 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-  const user = await User.findOne({$or : [{username},{ email }]});
-  if (!user){
+  const user = await User.findOne({ $or: [{ username }, { email }] });
+  if (!user) {
     throw new ApiError(401, "Invalid username or email");
   }
 
@@ -135,10 +136,66 @@ const loginUser = asyncHandler(async (req, res) => {
     secure: process.env.NODE_ENV === "production",
   };
 
-  return res.status(200)
-  .cookie("refreshToken", refreshToken, options)
-  .cookie("accessToken", accessToken, options)
-  .json(new ApiResponse(200, {user : loggedInUser, refreshToken, accessToken}, "User logged in successfully"));
-})
+  return res
+    .status(200)
+    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { user: loggedInUser, refreshToken, accessToken },
+        "User logged in successfully"
+      )
+    );
+});
 
-export { registerUser };
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+  if (!incomingRefreshToken) {
+    throw new ApiError(401, "Please login again");
+  }
+
+  try {
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) {
+      throw new ApiError(401, "invalid refresh token");
+    }
+
+    if (user?.refreshToken !== incomingRefreshToken) {
+      throw new ApiError(401, "invalid refresh token");
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    };
+
+    const { accessToken, refreshToken: newRefreshToken } =
+      await generateAccessAndRefreshToken(user._id);
+
+    return res
+      .status(200)
+      .cookie("refreshToken", newRefreshToken, options)
+      .cookie("accessToken", accessToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken: newRefreshToken },
+          "Access token refreshed successfully"
+        )
+      );
+  } catch (error) {}
+});
+
+const logoutUser = asyncHandler(async (req, res) => {
+  // TO DO: Implement logout functionality
+});
+
+export { registerUser, loginUser, refreshAccessToken };
