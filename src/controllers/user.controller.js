@@ -439,6 +439,8 @@ export {
   logoutUser,
   changeCurrentPassword,
   getCuurentUser,
+  getUserChannleProfile,
+  getWachHistory,
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
